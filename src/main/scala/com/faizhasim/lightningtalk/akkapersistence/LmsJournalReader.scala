@@ -25,34 +25,23 @@ object LmsJournalReader extends App {
 
   val trainingCreditActor = system.actorOf(TrainingCreditActor.props())
 
+  // WIll only show up for LevelDB (not MySQL)
   val queries = PersistenceQuery(system).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
   queries
     .persistenceIds()
     .map(id => system.log.info(s"Id received [$id]"))
     .to(Sink.ignore)
     .run()
-
   queries
     .eventsByPersistenceId("counter-persistent-actor-1")
     .map(eventEnvelope => system.log.info(s"Id [${eventEnvelope.persistenceId}] Event [${eventEnvelope.event}]"))
     .to(Sink.ignore)
     .run()
 
-  trainingCreditActor ! ResetTrainingCredit()
 
-//  trainingCreditActor ! AddTrainingCreditCoupon(TrainingCreditCoupon(10))
-//  trainingCreditActor ! AddTrainingCreditCoupon(TrainingCreditCoupon(100))
-//  trainingCreditActor ! SpendTrainingCredit(4)
-//  trainingCreditActor ! SpendTrainingCredit(2)
-//  trainingCreditActor ! SpendTrainingCredit(45)
-//  trainingCreditActor ! AddTrainingCreditCoupon(TrainingCreditCoupon(10))
-//
-//  system.scheduler.scheduleOnce(5 second, trainingCreditActor, SpendTrainingCredit(2))
-//  system.scheduler.scheduleOnce(10 second, trainingCreditActor, SpendTrainingCredit(5))
-
-//  def randomInt(min: Int = 1, max: Int = 10) = (min + new Random().nextInt(max)) seconds
   val inSecondsRange = new RandomIntervalGenerator(1 second, 5 seconds)
 
+  trainingCreditActor ! ResetTrainingCredit()
   system.scheduler.schedule(1 second, inSecondsRange.duration, trainingCreditActor, SpendTrainingCredit(21))
   system.scheduler.schedule(1 second, inSecondsRange.duration, trainingCreditActor, AddTrainingCreditCoupon(TrainingCreditCoupon(21)))
 
