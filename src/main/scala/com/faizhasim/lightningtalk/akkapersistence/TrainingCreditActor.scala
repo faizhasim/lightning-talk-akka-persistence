@@ -23,22 +23,23 @@ class TrainingCreditActor(r: Recovery = Recovery()) extends PersistentActor with
     case s => println(s"receiveRecover: $s")
   }
 
-  val snapShotInterval = 3
-
-  private def updateStateWithSnapshotting(event: TrainingCreditEvent) = {
-    updateState(event)
-    context.system.eventStream.publish(event)
-    if (lastSequenceNr % snapShotInterval == 0 && lastSequenceNr != 0)
-      saveSnapshot(state)
-  }
-
   override def receiveCommand: Receive = {
-    case AddTrainingCreditCoupon(coupon) =>
-      persist(TrainingCreditAdded(coupon.arbitraryValue))(updateStateWithSnapshotting)
-    case ResetTrainingCredit(initialAmount) =>
-      persist(TrainingCreditReset(initialAmount))(updateStateWithSnapshotting)
-    case SpendTrainingCredit(credit) =>
-      persist(TrainingCreditRemoved(credit))(updateStateWithSnapshotting)
+    def updateStateWithSnapshotting(event: TrainingCreditEvent) = {
+      val snapShotInterval = 3
+      updateState(event)
+      context.system.eventStream.publish(event)
+      if (lastSequenceNr % snapShotInterval == 0 && lastSequenceNr != 0)
+        saveSnapshot(state)
+    }
+
+    {
+      case AddTrainingCreditCoupon(coupon) =>
+        persist(TrainingCreditAdded(coupon.arbitraryValue))(updateStateWithSnapshotting)
+      case ResetTrainingCredit(initialAmount) =>
+        persist(TrainingCreditReset(initialAmount))(updateStateWithSnapshotting)
+      case SpendTrainingCredit(credit) =>
+        persist(TrainingCreditRemoved(credit))(updateStateWithSnapshotting)
+    }
   }
 }
 
